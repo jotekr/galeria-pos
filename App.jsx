@@ -88,6 +88,9 @@ export default function ArtPOS() {
   const [editProduct, setEditProduct] = useState(null);
   const [form, setForm] = useState({ name:"", price:"", stock:"1", category:"Biżuteria", unit:"szt", artist:"", material:"", desc:"" });
   const [successMsg, setSuccessMsg] = useState("");
+  const [magSearch, setMagSearch] = useState("");
+  const [magCatFilter, setMagCatFilter] = useState("Wszystkie");
+  const [magSuggOpen, setMagSuggOpen] = useState(false);
 
   // Load products from Firestore
   useEffect(() => {
@@ -120,6 +123,14 @@ export default function ArtPOS() {
     (catFilter === "Wszystkie" || p.category === catFilter) &&
     (p.name?.toLowerCase().includes(search.toLowerCase()) || p.artist?.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const magFiltered = products.filter(p =>
+    (magCatFilter === "Wszystkie" || p.category === magCatFilter) &&
+    (p.name?.toLowerCase().includes(magSearch.toLowerCase()) || p.artist?.toLowerCase().includes(magSearch.toLowerCase()))
+  );
+  const magSuggestions = magSearch.length >= 2 ? products.filter(p =>
+    p.name?.toLowerCase().includes(magSearch.toLowerCase()) || p.artist?.toLowerCase().includes(magSearch.toLowerCase())
+  ).slice(0, 6) : [];
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
@@ -314,8 +325,11 @@ export default function ArtPOS() {
       {/* MAGAZYN */}
       {tab==="magazyn" && (
         <div style={s.main}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-            <div style={{ fontWeight:700, fontSize:18, fontFamily:"Georgia,serif" }}>📦 Magazyn produktów</div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:10 }}>
+            <div>
+              <div style={{ fontWeight:700, fontSize:18, fontFamily:"Georgia,serif" }}>📦 Magazyn produktów</div>
+              <div style={{ fontSize:12, color:"#6a5a48", marginTop:3 }}>Łącznie: <b style={{ color:"#e8dcc8" }}>{products.length}</b> pozycji · <b style={{ color:"#e8dcc8" }}>{products.reduce((s,p)=>s+p.stock,0)}</b> szt{magSearch && <span style={{ color:"#c9a84c", marginLeft:8 }}>→ {magFiltered.length} wyników</span>}</div>
+            </div>
             <button onClick={() => { setShowForm(true); setEditProduct(null); setForm({ name:"", price:"", stock:"1", category:"Biżuteria", unit:"szt", artist:"", material:"", desc:"" }); }} style={{ ...s.goldBtn, width:"auto" }}>+ Dodaj produkt</button>
           </div>
           {lowStock.length>0 && (
@@ -327,10 +341,42 @@ export default function ArtPOS() {
               </div>
             </div>
           )}
+
+          {/* WYSZUKIWARKA MAGAZYNU */}
+          <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap", alignItems:"flex-start" }}>
+            <div style={{ position:"relative", width:"100%", maxWidth:320 }}>
+              <div style={{ position:"relative" }}>
+                <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:16, color:magSearch?"#c9a84c":"#6a5a48", pointerEvents:"none" }}>🔍</span>
+                <input value={magSearch} onChange={e=>{setMagSearch(e.target.value);setMagSuggOpen(true);}} onFocus={()=>setMagSuggOpen(true)} onBlur={()=>setTimeout(()=>setMagSuggOpen(false),200)} placeholder="Szukaj produktu, autora..." style={{ ...s.input, paddingLeft:38, paddingRight:magSearch?32:14 }} />
+                {magSearch && <button onClick={()=>{setMagSearch("");setMagCatFilter("Wszystkie");}} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"#6a5a48", cursor:"pointer", fontSize:16, padding:0, lineHeight:1 }}>✕</button>}
+              </div>
+              {/* PODPOWIEDZI / AUTOCOMPLETE */}
+              {magSuggOpen && magSuggestions.length>0 && magSearch.length>=2 && (
+                <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#1c1a17", border:"1px solid #3a3528", borderRadius:"0 0 10px 10px", boxShadow:"0 8px 24px rgba(0,0,0,0.4)", zIndex:50, overflow:"hidden" }}>
+                  {magSuggestions.map(p=>(
+                    <div key={p.id} onMouseDown={()=>{setMagSearch(p.name);setMagSuggOpen(false);}} style={{ padding:"10px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid #2a2520", transition:"background 0.1s" }} onMouseEnter={e=>e.currentTarget.style.background="#2a2520"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <span style={{ fontSize:16 }}>{CAT_ICONS[p.category]||"📦"}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, fontSize:13, color:"#e8dcc8", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.name}</div>
+                        <div style={{ fontSize:11, color:"#6a5a48" }}>{p.artist && <span style={{ fontStyle:"italic" }}>{p.artist} · </span>}{fmt(p.price)}</div>
+                      </div>
+                      <span style={{ background:p.stock===0?"#ef606022":p.stock===1?"#e8a03022":"#7db87d22", color:p.stock===0?"#ef6060":p.stock===1?"#e8a030":"#7db87d", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700, whiteSpace:"nowrap" }}>{p.stock===0?"BRAK":p.stock+" szt"}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {categories.map(c=>(
+                <button key={c} onClick={()=>setMagCatFilter(c)} style={{ background:magCatFilter===c?(CAT_COLORS[c]||"#c9a84c")+"22":"transparent", color:magCatFilter===c?(CAT_COLORS[c]||"#c9a84c"):"#6a5a48", border:"1px solid "+(magCatFilter===c?(CAT_COLORS[c]||"#c9a84c"):"#3a3528"), borderRadius:8, padding:"5px 12px", fontSize:12, cursor:"pointer", fontWeight:magCatFilter===c?700:400 }}>{CAT_ICONS[c]||"📦"} {c}</button>
+              ))}
+            </div>
+          </div>
+
           <table style={s.table}>
             <thead><tr>{["Produkt","Autor","Kategoria","Cena","Stan",""].map(h=><th key={h} style={s.th}>{h}</th>)}</tr></thead>
             <tbody>
-              {products.map(p => (
+              {magFiltered.map(p => (
                 <tr key={p.id}>
                   <td style={s.td}><b style={{ color:"#e8dcc8" }}>{p.name}</b>{p.material&&<div style={{ fontSize:11, color:"#6a5a48", marginTop:2 }}>{p.material}</div>}</td>
                   <td style={{ ...s.td, fontStyle:"italic", color:"#c9a84c", fontSize:12 }}>{p.artist||"—"}</td>
