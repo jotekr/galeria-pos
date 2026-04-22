@@ -1,4 +1,23 @@
-import { useState, useEffect } from "react";
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salon Sztuki Art Krak – POS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #1a1208; color: #e8dcc8; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: #1c1a17; } ::-webkit-scrollbar-thumb { background: #3a3528; border-radius: 3px; }
+    input, select, button { font-family: inherit; }
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/main.jsx"></script>
+</body>
+</html>import { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 
